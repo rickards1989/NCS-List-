@@ -10,9 +10,9 @@
         .sticky-header { position: sticky; top: 0; background: var(--bg); padding: 10px; z-index: 999; display: flex; justify-content: center; gap: 5px; }
         .action-btn { background: #555; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; flex: 1; font-size: 14px; }
         .copy-btn { background: #00c853; color: white; flex: 2; }
-        .defect-row { display: flex; align-items: center; gap: 8px; padding: 8px; margin-bottom: 6px; background: var(--card); border-radius: 6px; }
-        input[type="text"] { width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
-        .delete-btn { background: none; color: #aaa; border: none; cursor: pointer; font-size: 18px; padding: 0 5px; }
+        .defect-row { display: flex; align-items: center; gap: 8px; padding: 12px; margin-bottom: 6px; background: var(--card); border-radius: 6px; }
+        input[type="text"] { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        .delete-btn { background: var(--danger); color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
         h1 { color: white; text-align: center; font-size: 18px; margin: 10px 0; }
     </style>
 </head>
@@ -26,7 +26,7 @@
     
     <div style="background: white; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
         <input type="text" id="new_shorthand" placeholder="Add custom,ncs."><br>
-        <button onclick="addNewDefect()" style="width:100%; padding:8px; margin-top:5px; background:var(--primary); color:white; border:none; border-radius:4px;">Add to Top</button>
+        <button onclick="addNewDefect()" style="width:100%; padding:10px; margin-top:8px; background:var(--primary); color:white; border:none; border-radius:4px;">Add to Top</button>
     </div>
 
     <div id="list_container"></div>
@@ -38,53 +38,61 @@
             "Equipotential earth bonding missing/inadequate,ncs.", "Filling link left connected contrary to water regulations,ncs.", "Cooker stability chain/bracket missing,ncs.", "Condensate not to MI's,ncs.", "Fire stop plate missing through ceiling,ncs.", "Boiler flue not sealed to fabric of building,ncs.", "Flue terminal within min distance to opening,ncs.", "No Reg 15 emergency notice fitted at meter,ncs."
         ];
 
-        let history = [];
-
         window.onload = () => { loadList(); };
 
-        function loadList(saveToHistory = true) {
-            let saved = JSON.parse(localStorage.getItem('ncs_flat_list') || 'null');
-            let list = saved || initialList;
-            if (saveToHistory) history.push(JSON.stringify(list));
-            document.getElementById('list_container').innerHTML = '';
-            list.forEach(text => document.getElementById('list_container').appendChild(createRow(text)));
+        function loadList() {
+            let list = JSON.parse(localStorage.getItem('ncs_flat_list') || JSON.stringify(initialList));
+            render(list);
         }
 
-        function createRow(text) {
-            let div = document.createElement('div');
-            div.className = 'defect-row';
-            div.innerHTML = `<input type="checkbox" class="fault-check"><input type="text" class="fault-text" value="${text}" onblur="saveChanges()"><button class="delete-btn" onclick="this.parentElement.remove(); saveChanges()">×</button>`;
-            return div;
+        function render(list) {
+            document.getElementById('list_container').innerHTML = '';
+            list.forEach(text => {
+                let div = document.createElement('div');
+                div.className = 'defect-row';
+                div.innerHTML = `<input type="checkbox" class="fault-check"><input type="text" class="fault-text" value="${text}" onchange="saveChanges()"><button class="delete-btn" onclick="deleteItem(this)">✕</button>`;
+                document.getElementById('list_container').appendChild(div);
+            });
         }
 
         function saveChanges() {
             let list = [];
             document.querySelectorAll('.fault-text').forEach(input => list.push(input.value));
+            localStorage.setItem('history_prev', localStorage.getItem('ncs_flat_list'));
             localStorage.setItem('ncs_flat_list', JSON.stringify(list));
-            history.push(JSON.stringify(list));
+        }
+
+        function deleteItem(btn) {
+            saveChanges();
+            btn.parentElement.remove();
         }
 
         function undo() {
-            if (history.length > 1) {
-                history.pop(); // remove current
-                let last = history[history.length - 1];
-                localStorage.setItem('ncs_flat_list', last);
-                loadList(false);
+            let prev = localStorage.getItem('history_prev');
+            if (prev && prev !== 'null') {
+                localStorage.setItem('ncs_flat_list', prev);
+                localStorage.setItem('history_prev', 'null');
+                loadList();
+            } else {
+                alert("Nothing to undo!");
             }
         }
 
         function addNewDefect() {
             let input = document.getElementById('new_shorthand');
             if(!input.value) return;
-            document.getElementById('list_container').prepend(createRow(input.value));
             saveChanges();
+            let current = JSON.parse(localStorage.getItem('ncs_flat_list'));
+            current.unshift(input.value);
+            localStorage.setItem('ncs_flat_list', JSON.stringify(current));
+            loadList();
             input.value = '';
         }
 
         function resetList() {
             if(confirm("Restore original list?")) {
                 localStorage.removeItem('ncs_flat_list');
-                history = [];
+                localStorage.removeItem('history_prev');
                 loadList();
             }
         }
