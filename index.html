@@ -50,28 +50,29 @@
             list.forEach(text => {
                 let div = document.createElement('div');
                 div.className = 'defect-row';
-                div.innerHTML = `<input type="checkbox" class="fault-check"><input type="text" class="fault-text" value="${text}" onchange="saveChanges()"><button class="delete-btn" onclick="deleteItem(this)">✕</button>`;
+                div.innerHTML = `<input type="checkbox" class="fault-check"><input type="text" class="fault-text" value="${text}"><button class="delete-btn" onclick="deleteItem(this)">✕</button>`;
                 document.getElementById('list_container').appendChild(div);
             });
         }
 
-        function saveChanges() {
-            let list = [];
-            document.querySelectorAll('.fault-text').forEach(input => list.push(input.value));
-            localStorage.setItem('history_prev', localStorage.getItem('ncs_flat_list'));
+        function saveState(list) {
+            localStorage.setItem('history_prev', localStorage.getItem('ncs_flat_list') || JSON.stringify(initialList));
             localStorage.setItem('ncs_flat_list', JSON.stringify(list));
         }
 
         function deleteItem(btn) {
-            saveChanges();
-            btn.parentElement.remove();
+            let currentList = JSON.parse(localStorage.getItem('ncs_flat_list') || JSON.stringify(initialList));
+            let index = Array.from(btn.parentElement.parentElement.children).indexOf(btn.parentElement);
+            currentList.splice(index, 1);
+            saveState(currentList);
+            render(currentList);
         }
 
         function undo() {
             let prev = localStorage.getItem('history_prev');
-            if (prev && prev !== 'null') {
+            if (prev) {
                 localStorage.setItem('ncs_flat_list', prev);
-                localStorage.setItem('history_prev', 'null');
+                localStorage.removeItem('history_prev');
                 loadList();
             } else {
                 alert("Nothing to undo!");
@@ -81,11 +82,10 @@
         function addNewDefect() {
             let input = document.getElementById('new_shorthand');
             if(!input.value) return;
-            saveChanges();
-            let current = JSON.parse(localStorage.getItem('ncs_flat_list'));
-            current.unshift(input.value);
-            localStorage.setItem('ncs_flat_list', JSON.stringify(current));
-            loadList();
+            let currentList = JSON.parse(localStorage.getItem('ncs_flat_list') || JSON.stringify(initialList));
+            currentList.unshift(input.value);
+            saveState(currentList);
+            render(currentList);
             input.value = '';
         }
 
