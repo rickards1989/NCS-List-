@@ -5,31 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NCS Defects List</title>
     <style>
-        :root { --primary: #4b0082; --bg: #2e003e; --card: #ffffff; --text: #1c1c1e; --danger: #ff4d4d; }
+        :root { --primary: #4b0082; --bg: #2e003e; --card: #ffffff; --text: #1c1c1e; }
         body { background-color: var(--bg); color: var(--text); font-family: sans-serif; padding: 16px; margin: 0; }
-        .sticky-header { position: sticky; top: 0; background: var(--bg); padding: 10px; z-index: 999; }
-        .controls { display: flex; gap: 5px; margin-bottom: 10px; }
-        .action-btn { background: #555; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; flex: 1; font-size: 14px; }
-        .copy-btn { background: #00c853; color: white; flex: 2; }
+        .sticky-header { position: sticky; top: 0; background: var(--bg); padding: 10px 0; z-index: 999; }
+        .copy-btn { background: #00c853; color: white; border: none; padding: 20px; width: 100%; font-weight: bold; font-size: 18px; border-radius: 8px; margin-bottom: 10px; }
+        .secondary-actions { display: flex; gap: 10px; margin-bottom: 15px; }
+        .action-btn { background: #444; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; flex: 1; }
         #searchBar { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; margin-bottom: 10px; font-size: 16px; box-sizing: border-box; }
         .defect-row { display: flex; align-items: center; gap: 8px; padding: 10px; margin-bottom: 6px; background: var(--card); border-radius: 6px; }
         input[type="text"] { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-        .delete-btn { background: var(--danger); color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .delete-btn { background: none; color: #888; border: none; cursor: pointer; font-size: 20px; padding: 5px; }
         h1 { color: white; text-align: center; font-size: 18px; margin: 5px 0; }
     </style>
 </head>
 <body>
     <h1>NCS Defects List</h1>
     <div class="sticky-header">
-        <input type="text" id="searchBar" placeholder="🔍 Search defects..." onkeyup="filterList()">
-        <div class="controls">
-            <button class="action-btn copy-btn" onclick="copyNCS()">📋 COPY</button>
-            <button class="action-btn" onclick="undo()">↩️</button>
-            <button class="action-btn" onclick="resetList()">🔄</button>
+        <button class="copy-btn" onclick="copyNCS()">📋 COPY SELECTED</button>
+        <div class="secondary-actions">
+            <button class="action-btn" onclick="undo()">UNDO</button>
+            <button class="action-btn" onclick="resetList()">RESET</button>
         </div>
+        <input type="text" id="searchBar" placeholder="🔍 Search defects..." onkeyup="filterList()">
     </div>
     
-    <div style="background: white; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+    <div style="background: white; padding: 10px; border-radius: 8px; margin-bottom: 15px;">
         <input type="text" id="new_shorthand" placeholder="Add custom,ncs.">
         <button onclick="addNewDefect()" style="width:100%; padding:10px; margin-top:8px; background:var(--primary); color:white; border:none; border-radius:4px;">Add to Top</button>
     </div>
@@ -37,100 +37,45 @@
     <div id="list_container"></div>
 
     <script>
-        const initialDefaults = [
-            {text: "Gas pipe sleeved/sealed incorrectly through wall,ncs.", count: 0},
-            {text: "Gas pipe too close to electrics,ncs.", count: 0},
-            {text: "Cooker point incorrectly sited,ncs.", count: 0},
-            {text: "Anaconda ribs touching/stretched,ncs.", count: 0},
-            {text: "Exposed stainless steel pipe incorrectly taped,ncs.", count: 0},
-            {text: "Inadequately supported gas pipework,ncs.", count: 0},
-            {text: "Meter enclosure door damaged/missing,ncs.", count: 0},
-            {text: "Gas meter box latch missing,ncs.", count: 0},
-            {text: "Gas meter box outlet adaptor/union missing,ncs.", count: 0},
-            {text: "Meter bank ventilation below highest joint,ncs.", count: 0},
-            {text: "Meter bracket securing clips missing,ncs.", count: 0},
-            {text: "Meter regulator missing security seal,ncs.", count: 0},
-            {text: "Equipotential earth bonding missing/inadequate,ncs.", count: 0},
-            {text: "Filling link left connected contrary to water regulations,ncs.", count: 0},
-            {text: "Cooker stability chain/bracket missing,ncs.", count: 0},
-            {text: "Condensate not to MI's,ncs.", count: 0},
-            {text: "Fire stop plate missing through ceiling,ncs.", count: 0},
-            {text: "Boiler flue not sealed to fabric of building,ncs.", count: 0},
-            {text: "Flue terminal within min distance to opening,ncs.", count: 0},
-            {text: "No Reg 15 emergency notice fitted at meter,ncs.", count: 0}
+        const initialList = [
+            "Gas pipe sleeved/sealed incorrectly through wall,ncs.", "Gas pipe too close to electrics,ncs.", "Cooker point incorrectly sited,ncs.", "Anaconda ribs touching/stretched,ncs.", "Exposed stainless steel pipe incorrectly taped,ncs.", "Inadequately supported gas pipework,ncs.",
+            "Meter enclosure door damaged/missing,ncs.", "Gas meter box latch missing,ncs.", "Gas meter box outlet adaptor/union missing,ncs.", "Meter bank ventilation below highest joint,ncs.", "Meter bracket securing clips missing,ncs.", "Meter regulator missing security seal,ncs.",
+            "Equipotential earth bonding missing/inadequate,ncs.", "Filling link left connected contrary to water regulations,ncs.", "Cooker stability chain/bracket missing,ncs.", "Condensate not to MI's,ncs.", "Fire stop plate missing through ceiling,ncs.", "Boiler flue not sealed to fabric of building,ncs.", "Flue terminal within min distance to opening,ncs.", "No Reg 15 emergency notice fitted at meter,ncs."
         ];
 
         window.onload = () => { loadList(); };
 
         function loadList() {
-            let list = JSON.parse(localStorage.getItem('ncs_smart_list') || JSON.stringify(initialDefaults));
-            list.sort((a, b) => b.count - a.count);
-            render(list);
+            let saved = localStorage.getItem('ncs_flat_list');
+            render(saved ? JSON.parse(saved) : initialList);
         }
 
         function render(list) {
             document.getElementById('list_container').innerHTML = '';
-            list.forEach(item => {
+            list.forEach(text => {
                 let div = document.createElement('div');
                 div.className = 'defect-row';
-                div.innerHTML = `<input type="checkbox" class="fault-check" data-text="${item.text}"><input type="text" class="fault-text" value="${item.text}" onchange="saveChanges()"><button class="delete-btn" onclick="deleteItem('${item.text}')">✕</button>`;
+                div.innerHTML = `<input type="checkbox" class="fault-check"><input type="text" class="fault-text" value="${text}" onchange="saveChanges()"><button class="delete-btn" onclick="deleteItem(this)">🗑️</button>`;
                 document.getElementById('list_container').appendChild(div);
-            });
-        }
-
-        function filterList() {
-            let input = document.getElementById('searchBar').value.toLowerCase();
-            document.querySelectorAll('.defect-row').forEach(row => {
-                let text = row.querySelector('.fault-text').value.toLowerCase();
-                row.style.display = text.includes(input) ? "flex" : "none";
             });
         }
 
         function saveChanges() {
             let list = [];
-            document.querySelectorAll('.defect-row').forEach(row => {
-                let text = row.querySelector('.fault-text').value;
-                let count = JSON.parse(localStorage.getItem('ncs_smart_list') || JSON.stringify(initialDefaults)).find(i => i.text === row.querySelector('.fault-check').getAttribute('data-text'))?.count || 0;
-                list.push({text: text, count: count});
-            });
-            localStorage.setItem('history_prev', localStorage.getItem('ncs_smart_list'));
-            localStorage.setItem('ncs_smart_list', JSON.stringify(list));
+            document.querySelectorAll('.fault-text').forEach(input => list.push(input.value));
+            localStorage.setItem('history_prev', localStorage.getItem('ncs_flat_list'));
+            localStorage.setItem('ncs_flat_list', JSON.stringify(list));
         }
 
-        function copyNCS() {
-            let selected = [];
-            let list = JSON.parse(localStorage.getItem('ncs_smart_list') || JSON.stringify(initialDefaults));
-            
-            document.querySelectorAll('.fault-check:checked').forEach(c => {
-                let text = c.getAttribute('data-text');
-                selected.push(text);
-                let item = list.find(i => i.text === text);
-                if(item) item.count += 1;
-            });
-
-            if(selected.length === 0) return alert("Select items first.");
-            
-            localStorage.setItem('history_prev', JSON.stringify(JSON.parse(localStorage.getItem('ncs_smart_list') || JSON.stringify(initialDefaults))));
-            localStorage.setItem('ncs_smart_list', JSON.stringify(list));
-            
-            navigator.clipboard.writeText(selected.join('\n')).then(() => {
-                alert("Copied & Promoted!");
-                loadList();
-            });
-        }
-
-        function deleteItem(text) {
-            let list = JSON.parse(localStorage.getItem('ncs_smart_list') || JSON.stringify(initialDefaults));
+        function deleteItem(btn) {
             saveChanges();
-            list = list.filter(i => i.text !== text);
-            localStorage.setItem('ncs_smart_list', JSON.stringify(list));
-            render(list);
+            btn.parentElement.remove();
         }
 
         function undo() {
             let prev = localStorage.getItem('history_prev');
             if (prev) {
-                localStorage.setItem('ncs_smart_list', prev);
+                localStorage.setItem('ncs_flat_list', prev);
                 localStorage.removeItem('history_prev');
                 loadList();
             } else { alert("Nothing to undo!"); }
@@ -139,20 +84,35 @@
         function addNewDefect() {
             let input = document.getElementById('new_shorthand');
             if(!input.value) return;
-            let list = JSON.parse(localStorage.getItem('ncs_smart_list') || JSON.stringify(initialDefaults));
             saveChanges();
-            list.unshift({text: input.value, count: 0});
-            localStorage.setItem('ncs_smart_list', JSON.stringify(list));
-            render(list);
+            let current = JSON.parse(localStorage.getItem('ncs_flat_list') || JSON.stringify(initialList));
+            current.unshift(input.value);
+            localStorage.setItem('ncs_flat_list', JSON.stringify(current));
+            loadList();
             input.value = '';
         }
 
         function resetList() {
-            if(confirm("Restore original list?")) {
-                localStorage.removeItem('ncs_smart_list');
+            if(confirm("Factory reset list to original defaults?")) {
+                localStorage.removeItem('ncs_flat_list');
                 localStorage.removeItem('history_prev');
                 loadList();
             }
+        }
+
+        function copyNCS() {
+            let selected = [];
+            document.querySelectorAll('.fault-check:checked').forEach(c => selected.push(c.nextElementSibling.value));
+            if(selected.length === 0) return alert("Select at least one item.");
+            navigator.clipboard.writeText(selected.join('\n')).then(() => alert("Copied to clipboard!"));
+        }
+
+        function filterList() {
+            let filter = document.getElementById('searchBar').value.toLowerCase();
+            document.querySelectorAll('.defect-row').forEach(row => {
+                let text = row.querySelector('.fault-text').value.toLowerCase();
+                row.style.display = text.includes(filter) ? "flex" : "none";
+            });
         }
     </script>
 </body>
