@@ -2,61 +2,52 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NCS Defects List</title>
     <style>
-        :root { --primary: #007aff; --bg: #f2f2f7; --card: #ffffff; --text: #1c1c1e; --border: #c6c6c8; --danger: #ff3b30; --success: #34c759; }
-        body { background-color: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 16px; }
-        h1 { font-size: 22px; text-align: center; margin-bottom: 4px; margin-top: 10px; }
-        .subtitle { font-size: 12px; text-align: center; color: #8e8e93; margin-bottom: 15px; }
-        .sticky-header { position: -webkit-sticky; position: sticky; top: 0; background: rgba(242, 242, 247, 0.96); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); padding: 12px 0; z-index: 9999; margin-bottom: 16px; border-bottom: 1px solid #e5e5ea; display: flex; justify-content: center; }
-        .copy-btn { background: var(--primary); color: white; border: none; font-size: 17px; font-weight: bold; padding: 14px 24px; border-radius: 10px; width: 100%; max-width: 500px; box-shadow: 0 4px 10px rgba(0,122,255,0.3); cursor: pointer; }
-        .creator-block { background: #e3efff; border: 2px dashed var(--primary); border-radius: 12px; padding: 14px; margin-bottom: 20px; }
-        .creator-title { font-size: 14px; font-weight: bold; color: #004cb3; margin-bottom: 10px; text-transform: uppercase; }
-        .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
-        .creator-input { font-size: 14px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: #ffffff; }
-        .add-btn { background: var(--success); color: white; border: none; padding: 10px 16px; border-radius: 6px; font-weight: bold; font-size: 13px; cursor: pointer; height: 37px; }
-        .category-block { background: var(--card); border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .category-title { font-size: 16px; font-weight: bold; color: var(--primary); border-bottom: 1px solid #f2f2f7; padding-bottom: 6px; margin-bottom: 12px; text-transform: uppercase; }
-        .defect-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f2f2f7; }
-        .input-container { flex-grow: 1; display: flex; flex-direction: column; gap: 6px; }
-        .shorthand-edit { font-size: 14px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; width: 100%; background: #fafafa; }
-        .badge { font-size: 9px; font-weight: bold; padding: 2px 5px; border-radius: 4px; color: white; background-color: var(--primary); text-transform: uppercase; }
+        :root { --primary: #007aff; --bg: #f2f2f7; --card: #ffffff; --text: #1c1c1e; }
+        body { background-color: var(--bg); color: var(--text); font-family: sans-serif; padding: 16px; margin: 0; }
+        .sticky-header { position: sticky; top: 0; background: #f2f2f7; padding: 10px; z-index: 999; display: flex; justify-content: center; }
+        .copy-btn { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: bold; }
+        .category-block { background: var(--card); border-radius: 10px; padding: 15px; margin-bottom: 15px; }
+        .defect-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #eee; }
+        input[type="text"] { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
     </style>
 </head>
 <body>
     <h1>NCS Defects List</h1>
-    <div class="subtitle">Standard Defect Compiler</div>
     <div class="sticky-header"><button class="copy-btn" onclick="copyNCS()">Copy Selected Faults</button></div>
-    <div class="creator-block">
-        <div class="creator-title">🔧 Add Custom NCS to this Device</div>
-        <div class="form-group">
-            <label>Full Defect Description</label>
-            <input type="text" id="new_desc" class="creator-input" placeholder="e.g. Gas pipe issue">
-            <label>Shorthand Text</label>
-            <input type="text" id="new_shorthand" class="creator-input" placeholder="e.g. Gas pipe issue,ncs.">
+    
+    <div class="category-block">
+        <h3>🔧 Add Custom NCS</h3>
+        <input type="text" id="new_desc" placeholder="Full Description"><br><br>
+        <input type="text" id="new_shorthand" placeholder="Shorthand (e.g. Defect,ncs.)"><br><br>
+        <button onclick="addNewDefect()" style="width:100%; padding:10px;">Add Item</button>
+    </div>
+
+    <div id="list_container">
+        <div class="category-block">
+            <h3>Installation Pipework</h3>
+            <div class="defect-row"><input type="checkbox"><input type="text" value="Gas pipe sleeved incorrectly through wall,ncs."></div>
         </div>
-        <button class="add-btn" onclick="addNewDefect()">➕ Add to List</button>
     </div>
-    <div id="custom_defects_container"></div>
-    <div class="category-block"><div class="category-title">Installation Pipework</div>
-        <div class="defect-row"><input type="checkbox"><div class="input-container"><span class="badge">NCS</span><span>Gas pipe unsleeved through wall.</span><input type="text" class="shorthand-edit" value="Gas pipe sleeved/sealed incorrectly through wall,ncs."></div></div>
-    </div>
+
     <script>
         function addNewDefect() {
             let desc = document.getElementById('new_desc').value;
             let short = document.getElementById('new_shorthand').value;
-            if(!desc || !short) return alert("Fill both boxes");
             let div = document.createElement('div');
             div.className = 'defect-row';
-            div.innerHTML = `<input type="checkbox"><div class="input-container"><span class="badge">NCS</span><span>${desc}</span><input type="text" class="shorthand-edit" value="${short}"></div>`;
-            document.getElementById('custom_defects_container').appendChild(div);
+            div.innerHTML = `<input type="checkbox"><input type="text" value="${short}">`;
+            document.getElementById('list_container').appendChild(div);
         }
         function copyNCS() {
             let text = "";
-            document.querySelectorAll('.defect-row').forEach(row => { if(row.querySelector('input').checked) text += row.querySelector('input[type="text"]').value + "\n"; });
-            if(!text) return alert("Select a defect");
-            prompt("Copy this text:", text.trim());
+            document.querySelectorAll('.defect-row').forEach(row => { 
+                if(row.querySelector('input').checked) text += row.querySelector('input[type="text"]').value + "\n"; 
+            });
+            if(!text) return alert("No items selected");
+            prompt("Copy this:", text.trim());
         }
     </script>
 </body>
