@@ -4,25 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gas Report Tool</title>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
         body { margin: 0; font-family: sans-serif; background: #2e003e; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         #header { padding: 10px; background: #1a0022; color: white; display: flex; justify-content: space-between; align-items: center; }
-        .copy-btn { background: #00c853; color: white; border: none; padding: 14px; font-weight: bold; font-size: 16px; border-radius: 6px; width: 100%; margin-bottom: 10px; cursor: pointer; }
+        .copy-btn { background: #00c853; color: white; border: none; padding: 16px; font-weight: bold; font-size: 18px; border-radius: 6px; width: 100%; margin-bottom: 10px; cursor: pointer; }
         .action-bar { display: flex; gap: 5px; margin-bottom: 10px; padding: 0 10px; }
-        .action-btn { flex: 1; padding: 10px; background: #444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        .action-btn { flex: 1; padding: 12px; background: #444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
         #searchBar { width: calc(100% - 20px); margin: 0 10px 10px 10px; padding: 12px; box-sizing: border-box; border-radius: 4px; border: 1px solid #ccc; font-size: 16px; }
         #list_container { flex-grow: 1; overflow-y: auto; padding: 0 10px 20px 10px; }
-        .defect-row { background: white; padding: 12px; margin-bottom: 8px; border-radius: 6px; display: flex; align-items: center; gap: 10px; touch-action: manipulation; }
+        .defect-row { background: white; padding: 10px; margin-bottom: 8px; border-radius: 6px; display: flex; align-items: center; gap: 10px; }
+        .fault-check { width: 30px; height: 30px; cursor: pointer; }
         .fault-text { border: none; width: 100%; font-size: 16px; padding: 5px; }
-        .delete-btn { background: #ff5252; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer; font-size: 16px; }
+        .delete-btn { background: #ff5252; color: white; border: none; border-radius: 4px; padding: 10px; cursor: pointer; font-size: 16px; }
     </style>
 </head>
 <body>
 
     <div id="header">
         <span style="font-weight: bold;">Gas Report Tool</span>
-        <button onclick="resetList()" style="background:none; border:none; color:#ff5252; font-size:14px; cursor:pointer;">RESET</button>
+        <button onclick="resetList()" style="color:white; background:transparent; border:1px solid #555; padding: 5px; cursor: pointer;">RESET</button>
     </div>
 
     <button class="copy-btn" onclick="copyNCS()">📋 COPY SELECTED</button>
@@ -39,10 +39,7 @@
     <script>
         const initialList = ["Filling loop connected,ncs.", "Condensate not to MI's,ncs.", "Gas pipe too close to electric cable/apparatus,ncs.", "Anaconda ribs touching/stretched,ncs.", "Gas pipe sleeved/sealed incorrectly,ncs.", "Inadequately supported gas pipework,ncs.", "Gas meter box door/enclosure damaged or missing,ncs.", "Gas meter box latch missing,ncs.", "Gas meter box outlet adaptor/union missing,ncs.", "Meter bank ventilation below highest joint,ncs.", "Meter bracket securing clips missing,ncs.", "Meter regulator missing security seal,ncs.", "Flue terminal clearances incorrect,ncs.", "Equipotential earth bonding missing/inadequate,ncs.", "Boiler flue not sealed to fabric of building,ncs.", "Cooker point incorrectly sited,ncs.", "Cooker stability chain/bracket missing,ncs.", "Fire stop plate missing through ceiling,ncs.", "TracPipe (CSST) not correctly taped/protected,ncs.", "No Reg 15 emergency notice fitted at meter,ncs."];
 
-        window.onload = () => { 
-            loadList(); 
-            new Sortable(document.getElementById('list_container'), { animation: 150, onEnd: saveChanges });
-        };
+        window.onload = loadList;
 
         function loadList() {
             let saved = localStorage.getItem('ncs_flat_list');
@@ -52,11 +49,14 @@
         function render(list) {
             let container = document.getElementById('list_container');
             container.innerHTML = '';
-            list.forEach(text => {
+            list.forEach((text, index) => {
                 let div = document.createElement('div');
                 div.className = 'defect-row';
-                // Checkbox calls toggleSelect
-                div.innerHTML = `<input type="checkbox" class="fault-check" style="transform: scale(1.5);" onchange="toggleSelect(this)"> <input type="text" class="fault-text" value="${text}" onchange="saveChanges()"> <button class="delete-btn" onclick="deleteItem(this)">🗑</button>`;
+                div.innerHTML = `
+                    <input type="checkbox" class="fault-check" onchange="toggleSelect(this)">
+                    <input type="text" class="fault-text" value="${text}" onchange="saveChanges()">
+                    <button class="delete-btn" onclick="deleteItem(${index})">🗑</button>
+                `;
                 container.appendChild(div);
             });
         }
@@ -69,16 +69,30 @@
             }
         }
 
+        function addNewDefect() {
+            let text = prompt("Enter note:");
+            if(!text) return;
+            if(confirm("Add ',ncs.' to the end?")) text += ",ncs.";
+            
+            let list = JSON.parse(localStorage.getItem('ncs_flat_list') || JSON.stringify(initialList));
+            list.unshift(text);
+            localStorage.setItem('ncs_flat_list', JSON.stringify(list));
+            loadList();
+        }
+
+        function deleteItem(index) {
+            saveChanges();
+            let list = JSON.parse(localStorage.getItem('ncs_flat_list'));
+            list.splice(index, 1);
+            localStorage.setItem('ncs_flat_list', JSON.stringify(list));
+            loadList();
+        }
+
         function saveChanges() {
             let list = [];
             document.querySelectorAll('.fault-text').forEach(input => list.push(input.value));
             localStorage.setItem('history_prev', localStorage.getItem('ncs_flat_list'));
             localStorage.setItem('ncs_flat_list', JSON.stringify(list));
-        }
-
-        function deleteItem(btn) {
-            btn.parentElement.remove();
-            saveChanges();
         }
 
         function undo() {
@@ -88,18 +102,6 @@
                 localStorage.removeItem('history_prev');
                 loadList();
             }
-        }
-
-        function addNewDefect() {
-            let text = prompt("Enter note:");
-            if(!text) return;
-            if(confirm("Should this note have ',ncs.' added to the end?")) text += ",ncs.";
-            
-            saveChanges();
-            let current = JSON.parse(localStorage.getItem('ncs_flat_list') || JSON.stringify(initialList));
-            current.unshift(text);
-            localStorage.setItem('ncs_flat_list', JSON.stringify(current));
-            loadList();
         }
 
         function resetList() {
@@ -113,9 +115,7 @@
         function copyNCS() {
             let selected = [];
             document.querySelectorAll('.defect-row').forEach(row => {
-                if (row.querySelector('.fault-check').checked) {
-                    selected.push(row.querySelector('.fault-text').value);
-                }
+                if (row.querySelector('.fault-check').checked) selected.push(row.querySelector('.fault-text').value);
             });
             if(selected.length === 0) return alert("Select at least one item.");
             navigator.clipboard.writeText(selected.join('\n')).then(() => alert("Copied in order!"));
