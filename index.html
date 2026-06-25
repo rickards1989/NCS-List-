@@ -8,26 +8,20 @@
     <style>
         body { margin: 0; font-family: sans-serif; background: #2e003e; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         #header { padding: 12px; background: #1a0022; color: white; display: flex; justify-content: space-between; align-items: center; }
-        .copy-btn { background: #00c853; color: white; border: none; padding: 16px; font-weight: bold; font-size: 18px; border-radius: 8px; width: 100%; margin-bottom: 10px; cursor: pointer; }
-        .action-bar { display: flex; gap: 8px; margin-bottom: 10px; padding: 0 10px; }
-        .action-btn { flex: 1; padding: 12px; background: #444; color: white; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; }
-        #searchBar { width: calc(100% - 20px); margin: 0 10px 10px 10px; padding: 14px; border-radius: 6px; border: 1px solid #ccc; font-size: 16px; }
+        .action-bar { display: flex; gap: 8px; margin: 10px; }
+        .action-btn { flex: 1; padding: 12px; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; color: white; font-weight: bold; }
+        
         #list_container { flex-grow: 1; overflow-y: auto; padding: 0 10px 20px 10px; }
+        .defect-row { background: white; padding: 12px; margin-bottom: 8px; border-radius: 8px; display: flex; align-items: center; gap: 12px; border: 3px solid transparent; transition: 0.2s; }
         
-        /* Row Styles */
-        .defect-row { background: white; padding: 12px; margin-bottom: 8px; border-radius: 8px; display: flex; align-items: center; gap: 12px; border: 2px solid transparent; }
+        /* Selection Highlight (No checkbox) */
+        .defect-row.selected { background: #b9f6ca; border-color: #00c853; }
         
-        /* High-Contrast Selection */
-        .defect-row.selected { background: #b9f6ca; border: 3px solid #00c853; }
+        /* Delete Mode Highlight */
+        .delete-mode { border-color: #d32f2f !important; background: #ffccbc !important; }
         
-        .drag-handle { cursor: grab; font-size: 22px; color: #aaa; padding-right: 5px; user-select: none; }
+        .drag-handle { cursor: grab; font-size: 22px; color: #aaa; padding-right: 5px; }
         .row-text { flex-grow: 1; padding: 5px; cursor: pointer; font-size: 16px; font-weight: 500; }
-        
-        /* Softer Red Delete Button */
-        .delete-btn { background: #bf360c; opacity: 0.6; color: white; border: none; border-radius: 6px; padding: 8px 12px; cursor: pointer; font-size: 14px; }
-        
-        .check-icon { display: none; margin-right: 8px; font-size: 18px; color: #1b5e20; }
-        .selected .check-icon { display: inline; }
     </style>
 </head>
 <body>
@@ -37,28 +31,28 @@
         <button onclick="resetList()" style="color:#aaa; background:transparent; border:1px solid #555; padding: 5px; cursor: pointer; border-radius: 4px;">RESET</button>
     </div>
 
-    <button class="copy-btn" onclick="copyNCS()">📋 COPY SELECTED</button>
+    <button style="background:#00c853; color:white; border:none; padding:16px; font-weight:bold; font-size:18px; margin:10px; border-radius:8px;" onclick="copyNCS()">📋 COPY SELECTED</button>
 
     <div class="action-bar">
-        <button class="action-btn" onclick="addNewDefect()">+ ADD CUSTOM</button>
-        <button class="action-btn" id="undoBtn" onclick="undoDelete()" style="background:#00838f; display:none;">↩️ UNDO DELETE</button>
+        <button class="action-btn" style="background:#444;" onclick="addNewDefect()">+ ADD CUSTOM</button>
+        <button class="action-btn" id="delBtn" style="background:#d32f2f;" onclick="toggleDeleteMode()">🗑 DELETE MODE: OFF</button>
+        <button class="action-btn" id="undoBtn" style="background:#00838f; display:none;" onclick="undoDelete()">↩️ UNDO</button>
     </div>
-
-    <input type="text" id="searchBar" placeholder="🔍 Search..." onkeyup="filterList()">
 
     <div id="list_container"></div>
 
     <script>
         const defaultList = ["Filling loop connected,ncs.", "Condensate not to MI's,ncs.", "Gas pipe too close to electric cable/apparatus,ncs.", "Anaconda ribs touching/stretched,ncs.", "Gas pipe sleeved/sealed incorrectly,ncs.", "Inadequately supported gas pipework,ncs.", "Gas meter box door/enclosure damaged or missing,ncs.", "Gas meter box latch missing,ncs.", "Gas meter box outlet adaptor/union missing,ncs.", "Meter bank ventilation below highest joint,ncs.", "Meter bracket securing clips missing,ncs.", "Meter regulator missing security seal,ncs.", "Flue terminal clearances incorrect,ncs.", "Equipotential earth bonding missing/inadequate,ncs.", "Boiler flue not sealed to fabric of building,ncs.", "Cooker point incorrectly sited,ncs.", "Cooker stability chain/bracket missing,ncs.", "Fire stop plate missing through ceiling,ncs.", "TracPipe (CSST) not correctly taped/protected,ncs.", "No Reg 15 emergency notice fitted at meter,ncs."];
 
-        let deletedItem = null, deletedIndex = null;
+        let isDeleteMode = false, deletedItem = null, deletedIndex = null;
+
         window.onload = () => {
             loadList();
-            new Sortable(document.getElementById('list_container'), { handle: '.drag-handle', animation: 150, onEnd: saveChanges });
+            new Sortable(document.getElementById('list_container'), { handle: '.drag-handle', animation: 150, onEnd: saveOrder });
         };
 
         function loadList() {
-            let saved = localStorage.getItem('ncs_flat_list');
+            let saved = localStorage.getItem('ncs_list');
             render(saved ? JSON.parse(saved) : defaultList);
         }
 
@@ -68,72 +62,67 @@
             list.forEach((text, index) => {
                 let div = document.createElement('div');
                 div.className = 'defect-row';
-                div.innerHTML = `
-                    <div class="drag-handle">☰</div>
-                    <div class="row-text" onclick="toggleRow(this.parentElement)">
-                        <span class="check-icon">✅</span>${text}
-                    </div>
-                    <button class="delete-btn" onclick="deleteItem(event, ${index})">🗑</button>
-                `;
+                // Row content is now just handle + text. No checkbox.
+                div.innerHTML = `<div class="drag-handle">☰</div><div class="row-text" onclick="handleRowClick(this.parentElement, ${index})">${text}</div>`;
                 container.appendChild(div);
             });
         }
 
-        function toggleRow(row) {
-            row.classList.toggle('selected');
-            if (row.classList.contains('selected')) {
-                document.getElementById('list_container').prepend(row);
+        function handleRowClick(row, index) {
+            if (isDeleteMode) {
+                let list = JSON.parse(localStorage.getItem('ncs_list') || JSON.stringify(defaultList));
+                deletedItem = list[index]; deletedIndex = index;
+                list.splice(index, 1);
+                localStorage.setItem('ncs_list', JSON.stringify(list));
+                document.getElementById('undoBtn').style.display = 'block';
+                loadList();
+            } else {
+                row.classList.toggle('selected');
+                // Move to top if selected
+                if (row.classList.contains('selected')) document.getElementById('list_container').prepend(row);
             }
-            saveChanges();
         }
 
-        function deleteItem(e, index) {
-            e.stopPropagation();
-            let list = JSON.parse(localStorage.getItem('ncs_flat_list') || JSON.stringify(defaultList));
-            deletedItem = list[index]; deletedIndex = index;
-            list.splice(index, 1);
-            localStorage.setItem('ncs_flat_list', JSON.stringify(list));
-            document.getElementById('undoBtn').style.display = 'block';
-            loadList();
+        function toggleDeleteMode() {
+            isDeleteMode = !isDeleteMode;
+            let btn = document.getElementById('delBtn');
+            btn.innerText = isDeleteMode ? "🗑 DELETE MODE: ON" : "🗑 DELETE MODE: OFF";
+            document.querySelectorAll('.defect-row').forEach(row => {
+                row.classList.toggle('delete-mode', isDeleteMode);
+            });
         }
 
         function undoDelete() {
-            let list = JSON.parse(localStorage.getItem('ncs_flat_list') || JSON.stringify(defaultList));
+            let list = JSON.parse(localStorage.getItem('ncs_list') || JSON.stringify(defaultList));
             list.splice(deletedIndex, 0, deletedItem);
-            localStorage.setItem('ncs_flat_list', JSON.stringify(list));
+            localStorage.setItem('ncs_list', JSON.stringify(list));
             document.getElementById('undoBtn').style.display = 'none';
             loadList();
+        }
+
+        function saveOrder() {
+            let list = [];
+            document.querySelectorAll('.row-text').forEach(el => list.push(el.innerText));
+            localStorage.setItem('ncs_list', JSON.stringify(list));
         }
 
         function addNewDefect() {
             let text = prompt("Enter note:");
             if(!text) return;
-            let list = JSON.parse(localStorage.getItem('ncs_flat_list') || JSON.stringify(defaultList));
+            let list = JSON.parse(localStorage.getItem('ncs_list') || JSON.stringify(defaultList));
             list.unshift(text);
-            localStorage.setItem('ncs_flat_list', JSON.stringify(list));
+            localStorage.setItem('ncs_list', JSON.stringify(list));
             loadList();
         }
 
-        function saveChanges() {
-            let list = [];
-            document.querySelectorAll('.defect-row').forEach(row => list.push(row.innerText.replace('☰', '').replace('✅', '').trim()));
-            localStorage.setItem('ncs_flat_list', JSON.stringify(list));
-        }
-
         function copyNCS() {
-            let selected = [];
-            document.querySelectorAll('.defect-row.selected').forEach(row => {
-                selected.push(row.innerText.replace('☰', '').replace('✅', '').trim());
-            });
+            let selected = Array.from(document.querySelectorAll('.selected')).map(el => el.innerText.replace('☰', '').trim());
             if(selected.length === 0) return alert("Select at least one.");
-            navigator.clipboard.writeText(selected.join('\n')).then(() => alert("Copied in order!"));
+            navigator.clipboard.writeText(selected.join('\n')).then(() => alert("Copied!"));
         }
 
-        function filterList() {
-            let filter = document.getElementById('searchBar').value.toLowerCase();
-            document.querySelectorAll('.defect-row').forEach(row => {
-                row.style.display = row.innerText.toLowerCase().includes(filter) ? "flex" : "none";
-            });
+        function resetList() {
+            if(confirm("Factory reset?")) { localStorage.removeItem('ncs_list'); location.reload(); }
         }
     </script>
 </body>
