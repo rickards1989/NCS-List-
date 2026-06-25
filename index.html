@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NCS Defects List</title>
     <style>
-        :root { --primary: #007aff; --bg: #f2f2f7; --card: #ffffff; --text: #1c1c1e; }
+        :root { --primary: #7b68ee; --bg: #e6e6fa; --card: #ffffff; --text: #1c1c1e; }
         body { background-color: var(--bg); color: var(--text); font-family: sans-serif; padding: 16px; margin: 0; }
-        .sticky-header { position: sticky; top: 0; background: #f2f2f7; padding: 10px; z-index: 999; display: flex; justify-content: center; }
+        .sticky-header { position: sticky; top: 0; background: var(--bg); padding: 10px; z-index: 999; display: flex; justify-content: center; }
         .copy-btn { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: bold; }
         .category-block { background: var(--card); border-radius: 10px; padding: 15px; margin-bottom: 15px; }
         .defect-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #eee; }
@@ -22,7 +22,7 @@
         <h3>🔧 Add Custom NCS</h3>
         <input type="text" id="new_desc" placeholder="Full Description"><br><br>
         <input type="text" id="new_shorthand" placeholder="Shorthand (e.g. Defect,ncs.)"><br><br>
-        <button onclick="addNewDefect()" style="width:100%; padding:10px;">Add Item</button>
+        <button onclick="addNewDefect()" style="width:100%; padding:10px; background:var(--primary); color:white; border:none; border-radius:5px;">Add Item</button>
     </div>
 
     <div id="list_container">
@@ -47,6 +47,7 @@
     <script>
         function addNewDefect() {
             let short = document.getElementById('new_shorthand').value;
+            if(!short) return;
             let div = document.createElement('div');
             div.className = 'defect-row';
             div.innerHTML = `<input type="checkbox"><input type="text" value="${short}">`;
