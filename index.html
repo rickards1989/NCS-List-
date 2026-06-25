@@ -7,104 +7,152 @@
     <style>
         :root { --primary: #4b0082; --bg: #2e003e; --card: #ffffff; --text: #1c1c1e; --danger: #ff4d4d; }
         body { background-color: var(--bg); color: var(--text); font-family: sans-serif; padding: 16px; margin: 0; }
-        .sticky-header { position: sticky; top: 0; background: var(--bg); padding: 10px; z-index: 999; display: flex; justify-content: center; gap: 5px; }
+        .sticky-header { position: sticky; top: 0; background: var(--bg); padding: 10px; z-index: 999; }
+        .controls { display: flex; gap: 5px; margin-bottom: 10px; }
         .action-btn { background: #555; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; flex: 1; font-size: 14px; }
         .copy-btn { background: #00c853; color: white; flex: 2; }
-        .defect-row { display: flex; align-items: center; gap: 8px; padding: 12px; margin-bottom: 6px; background: var(--card); border-radius: 6px; }
+        #searchBar { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; margin-bottom: 10px; font-size: 16px; box-sizing: border-box; }
+        .defect-row { display: flex; align-items: center; gap: 8px; padding: 10px; margin-bottom: 6px; background: var(--card); border-radius: 6px; }
         input[type="text"] { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
         .delete-btn { background: var(--danger); color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        h1 { color: white; text-align: center; font-size: 18px; margin: 10px 0; }
+        h1 { color: white; text-align: center; font-size: 18px; margin: 5px 0; }
     </style>
 </head>
 <body>
     <h1>NCS Defects List</h1>
     <div class="sticky-header">
-        <button class="action-btn copy-btn" onclick="copyNCS()">📋 COPY</button>
-        <button class="action-btn" onclick="undo()">↩️ UNDO</button>
-        <button class="action-btn" onclick="resetList()">🔄 RESET</button>
+        <input type="text" id="searchBar" placeholder="🔍 Search defects..." onkeyup="filterList()">
+        <div class="controls">
+            <button class="action-btn copy-btn" onclick="copyNCS()">📋 COPY</button>
+            <button class="action-btn" onclick="undo()">↩️</button>
+            <button class="action-btn" onclick="resetList()">🔄</button>
+        </div>
     </div>
     
     <div style="background: white; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
-        <input type="text" id="new_shorthand" placeholder="Add custom,ncs."><br>
+        <input type="text" id="new_shorthand" placeholder="Add custom,ncs.">
         <button onclick="addNewDefect()" style="width:100%; padding:10px; margin-top:8px; background:var(--primary); color:white; border:none; border-radius:4px;">Add to Top</button>
     </div>
 
     <div id="list_container"></div>
 
     <script>
-        const initialList = [
-            "Gas pipe sleeved/sealed incorrectly through wall,ncs.", "Gas pipe too close to electrics,ncs.", "Cooker point incorrectly sited,ncs.", "Anaconda ribs touching/stretched,ncs.", "Exposed stainless steel pipe incorrectly taped,ncs.", "Inadequately supported gas pipework,ncs.",
-            "Meter enclosure door damaged/missing,ncs.", "Gas meter box latch missing,ncs.", "Gas meter box outlet adaptor/union missing,ncs.", "Meter bank ventilation below highest joint,ncs.", "Meter bracket securing clips missing,ncs.", "Meter regulator missing security seal,ncs.",
-            "Equipotential earth bonding missing/inadequate,ncs.", "Filling link left connected contrary to water regulations,ncs.", "Cooker stability chain/bracket missing,ncs.", "Condensate not to MI's,ncs.", "Fire stop plate missing through ceiling,ncs.", "Boiler flue not sealed to fabric of building,ncs.", "Flue terminal within min distance to opening,ncs.", "No Reg 15 emergency notice fitted at meter,ncs."
+        const initialDefaults = [
+            {text: "Gas pipe sleeved/sealed incorrectly through wall,ncs.", count: 0},
+            {text: "Gas pipe too close to electrics,ncs.", count: 0},
+            {text: "Cooker point incorrectly sited,ncs.", count: 0},
+            {text: "Anaconda ribs touching/stretched,ncs.", count: 0},
+            {text: "Exposed stainless steel pipe incorrectly taped,ncs.", count: 0},
+            {text: "Inadequately supported gas pipework,ncs.", count: 0},
+            {text: "Meter enclosure door damaged/missing,ncs.", count: 0},
+            {text: "Gas meter box latch missing,ncs.", count: 0},
+            {text: "Gas meter box outlet adaptor/union missing,ncs.", count: 0},
+            {text: "Meter bank ventilation below highest joint,ncs.", count: 0},
+            {text: "Meter bracket securing clips missing,ncs.", count: 0},
+            {text: "Meter regulator missing security seal,ncs.", count: 0},
+            {text: "Equipotential earth bonding missing/inadequate,ncs.", count: 0},
+            {text: "Filling link left connected contrary to water regulations,ncs.", count: 0},
+            {text: "Cooker stability chain/bracket missing,ncs.", count: 0},
+            {text: "Condensate not to MI's,ncs.", count: 0},
+            {text: "Fire stop plate missing through ceiling,ncs.", count: 0},
+            {text: "Boiler flue not sealed to fabric of building,ncs.", count: 0},
+            {text: "Flue terminal within min distance to opening,ncs.", count: 0},
+            {text: "No Reg 15 emergency notice fitted at meter,ncs.", count: 0}
         ];
 
         window.onload = () => { loadList(); };
 
         function loadList() {
-            let list = JSON.parse(localStorage.getItem('ncs_flat_list') || JSON.stringify(initialList));
+            let list = JSON.parse(localStorage.getItem('ncs_smart_list') || JSON.stringify(initialDefaults));
+            list.sort((a, b) => b.count - a.count);
             render(list);
         }
 
         function render(list) {
             document.getElementById('list_container').innerHTML = '';
-            list.forEach(text => {
+            list.forEach(item => {
                 let div = document.createElement('div');
                 div.className = 'defect-row';
-                div.innerHTML = `<input type="checkbox" class="fault-check"><input type="text" class="fault-text" value="${text}"><button class="delete-btn" onclick="deleteItem(this)">✕</button>`;
+                div.innerHTML = `<input type="checkbox" class="fault-check" data-text="${item.text}"><input type="text" class="fault-text" value="${item.text}" onchange="saveChanges()"><button class="delete-btn" onclick="deleteItem('${item.text}')">✕</button>`;
                 document.getElementById('list_container').appendChild(div);
             });
         }
 
-        function saveState(list) {
-            localStorage.setItem('history_prev', localStorage.getItem('ncs_flat_list') || JSON.stringify(initialList));
-            localStorage.setItem('ncs_flat_list', JSON.stringify(list));
+        function filterList() {
+            let input = document.getElementById('searchBar').value.toLowerCase();
+            document.querySelectorAll('.defect-row').forEach(row => {
+                let text = row.querySelector('.fault-text').value.toLowerCase();
+                row.style.display = text.includes(input) ? "flex" : "none";
+            });
         }
 
-        function deleteItem(btn) {
-            let currentList = JSON.parse(localStorage.getItem('ncs_flat_list') || JSON.stringify(initialList));
-            let index = Array.from(btn.parentElement.parentElement.children).indexOf(btn.parentElement);
-            currentList.splice(index, 1);
-            saveState(currentList);
-            render(currentList);
+        function saveChanges() {
+            let list = [];
+            document.querySelectorAll('.defect-row').forEach(row => {
+                let text = row.querySelector('.fault-text').value;
+                let count = JSON.parse(localStorage.getItem('ncs_smart_list') || JSON.stringify(initialDefaults)).find(i => i.text === row.querySelector('.fault-check').getAttribute('data-text'))?.count || 0;
+                list.push({text: text, count: count});
+            });
+            localStorage.setItem('history_prev', localStorage.getItem('ncs_smart_list'));
+            localStorage.setItem('ncs_smart_list', JSON.stringify(list));
+        }
+
+        function copyNCS() {
+            let selected = [];
+            let list = JSON.parse(localStorage.getItem('ncs_smart_list') || JSON.stringify(initialDefaults));
+            
+            document.querySelectorAll('.fault-check:checked').forEach(c => {
+                let text = c.getAttribute('data-text');
+                selected.push(text);
+                let item = list.find(i => i.text === text);
+                if(item) item.count += 1;
+            });
+
+            if(selected.length === 0) return alert("Select items first.");
+            
+            localStorage.setItem('history_prev', JSON.stringify(JSON.parse(localStorage.getItem('ncs_smart_list') || JSON.stringify(initialDefaults))));
+            localStorage.setItem('ncs_smart_list', JSON.stringify(list));
+            
+            navigator.clipboard.writeText(selected.join('\n')).then(() => {
+                alert("Copied & Promoted!");
+                loadList();
+            });
+        }
+
+        function deleteItem(text) {
+            let list = JSON.parse(localStorage.getItem('ncs_smart_list') || JSON.stringify(initialDefaults));
+            saveChanges();
+            list = list.filter(i => i.text !== text);
+            localStorage.setItem('ncs_smart_list', JSON.stringify(list));
+            render(list);
         }
 
         function undo() {
             let prev = localStorage.getItem('history_prev');
             if (prev) {
-                localStorage.setItem('ncs_flat_list', prev);
+                localStorage.setItem('ncs_smart_list', prev);
                 localStorage.removeItem('history_prev');
                 loadList();
-            } else {
-                alert("Nothing to undo!");
-            }
+            } else { alert("Nothing to undo!"); }
         }
 
         function addNewDefect() {
             let input = document.getElementById('new_shorthand');
             if(!input.value) return;
-            let currentList = JSON.parse(localStorage.getItem('ncs_flat_list') || JSON.stringify(initialList));
-            currentList.unshift(input.value);
-            saveState(currentList);
-            render(currentList);
+            let list = JSON.parse(localStorage.getItem('ncs_smart_list') || JSON.stringify(initialDefaults));
+            saveChanges();
+            list.unshift({text: input.value, count: 0});
+            localStorage.setItem('ncs_smart_list', JSON.stringify(list));
+            render(list);
             input.value = '';
         }
 
         function resetList() {
             if(confirm("Restore original list?")) {
-                localStorage.removeItem('ncs_flat_list');
+                localStorage.removeItem('ncs_smart_list');
                 localStorage.removeItem('history_prev');
                 loadList();
             }
-        }
-
-        function copyNCS() {
-            let selected = [];
-            document.querySelectorAll('.fault-check:checked').forEach(c => selected.push(c.nextElementSibling.value));
-            if(selected.length === 0) return alert("Select items first.");
-            let output = selected.join('\n');
-            navigator.clipboard.writeText(output).then(() => alert("Copied!")).catch(() => {
-                let t = document.createElement("textarea"); t.value = output; document.body.appendChild(t); t.select(); document.execCommand("copy"); document.body.removeChild(t); alert("Copied!");
-            });
         }
     </script>
 </body>
