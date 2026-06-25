@@ -5,13 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NCS Defects List</title>
     <style>
-        :root { --primary: #7b68ee; --bg: #e6e6fa; --card: #ffffff; --text: #1c1c1e; }
+        :root { --primary: #4b0082; --bg: #2e003e; --card: #ffffff; --text: #1c1c1e; }
         body { background-color: var(--bg); color: var(--text); font-family: sans-serif; padding: 16px; margin: 0; }
         .sticky-header { position: sticky; top: 0; background: var(--bg); padding: 10px; z-index: 999; display: flex; justify-content: center; }
         .copy-btn { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: bold; }
         .category-block { background: var(--card); border-radius: 10px; padding: 15px; margin-bottom: 15px; }
-        .defect-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #eee; }
-        input[type="text"] { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        .defect-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #eee; }
+        input[type="text"] { width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+        h3 { margin-top: 0; color: var(--primary); font-size: 16px; text-transform: uppercase; }
+        h1 { color: white; text-align: center; }
     </style>
 </head>
 <body>
@@ -21,7 +23,7 @@
     <div class="category-block">
         <h3>🔧 Add Custom NCS</h3>
         <input type="text" id="new_desc" placeholder="Full Description"><br><br>
-        <input type="text" id="new_shorthand" placeholder="Shorthand (e.g. Defect,ncs.)"><br><br>
+        <input type="text" id="new_shorthand" placeholder="Shorthand,ncs."><br><br>
         <button onclick="addNewDefect()" style="width:100%; padding:10px; background:var(--primary); color:white; border:none; border-radius:5px;">Add Item</button>
     </div>
 
@@ -31,16 +33,29 @@
             <div class="defect-row"><input type="checkbox"><input type="text" value="Gas pipe sleeved/sealed incorrectly through wall,ncs."></div>
             <div class="defect-row"><input type="checkbox"><input type="text" value="Gas pipe too close to electrics,ncs."></div>
             <div class="defect-row"><input type="checkbox"><input type="text" value="Cooker point incorrectly sited,ncs."></div>
+            <div class="defect-row"><input type="checkbox"><input type="text" value="Anaconda ribs touching/stretched,ncs."></div>
+            <div class="defect-row"><input type="checkbox"><input type="text" value="Exposed stainless steel pipe incorrectly taped,ncs."></div>
+            <div class="defect-row"><input type="checkbox"><input type="text" value="Inadequately supported gas pipework,ncs."></div>
+<  </div>
+        <div class="category-block">
+            <h3>Gas Meter</h3>
+            <div class="defect-row"><input type="checkbox"><input type="text" value="Meter enclosure door damaged/missing,ncs."></div>
+            <div class="defect-row"><input type="checkbox"><input type="text" value="Gas meter box latch missing,ncs."></div>
+            <div class="defect-row"><input type="checkbox"><input type="text" value="Gas meter box outlet adaptor/union missing,ncs."></div>
+            <div class="defect-row"><input type="checkbox"><input type="text" value="Meter bank ventilation below highest joint,ncs."></div>
+            <div class="defect-row"><input type="checkbox"><input type="text" value="Meter bracket securing clips missing,ncs."></div>
+            <div class="defect-row"><input type="checkbox"><input type="text" value="Meter regulator missing security seal,ncs."></div>
         </div>
         <div class="category-block">
-            <h3>Appliances & Systems</h3>
+            <h3>Valves & Appliances</h3>
+            <div class="defect-row"><input type="checkbox"><input type="text" value="Equipotential earth bonding missing/inadequate,ncs."></div>
             <div class="defect-row"><input type="checkbox"><input type="text" value="Filling link left connected contrary to water regulations,ncs."></div>
             <div class="defect-row"><input type="checkbox"><input type="text" value="Cooker stability chain/bracket missing,ncs."></div>
-        </div>
-        <div class="category-block">
-            <h3>Condensate & Flue</h3>
             <div class="defect-row"><input type="checkbox"><input type="text" value="Condensate not to MI's,ncs."></div>
+            <div class="defect-row"><input type="checkbox"><input type="text" value="Fire stop plate missing through ceiling,ncs."></div>
             <div class="defect-row"><input type="checkbox"><input type="text" value="Boiler flue not sealed to fabric of building,ncs."></div>
+            <div class="defect-row"><input type="checkbox"><input type="text" value="Flue terminal within min distance to opening,ncs."></div>
+            <div class="defect-row"><input type="checkbox"><input type="text" value="No Reg 15 emergency notice fitted at meter,ncs."></div>
         </div>
     </div>
 
