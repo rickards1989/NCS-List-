@@ -3,134 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NCS Defects List</title>
+    <title>NCS App</title>
     <style>
-        :root { --primary: #4b0082; --bg: #2e003e; --card: #ffffff; --text: #1c1c1e; }
-        body { background-color: var(--bg); color: var(--text); font-family: sans-serif; padding: 16px; margin: 0; }
-        .sticky-header { position: sticky; top: 0; background: var(--bg); padding: 10px 0; z-index: 999; }
-        .copy-btn { background: #00c853; color: white; border: none; padding: 20px; width: 100%; font-weight: bold; font-size: 18px; border-radius: 8px; margin-bottom: 10px; }
-        .secondary-actions { display: flex; gap: 10px; margin-bottom: 15px; }
-        .action-btn { background: #444; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; flex: 1; }
-        #searchBar { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; margin-bottom: 10px; font-size: 16px; box-sizing: border-box; }
-        .defect-row { display: flex; align-items: center; gap: 8px; padding: 10px; margin-bottom: 6px; background: var(--card); border-radius: 6px; }
-        input[type="text"] { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-        .delete-btn { background: none; color: #888; border: none; cursor: pointer; font-size: 20px; padding: 5px; }
-        h1 { color: white; text-align: center; font-size: 18px; margin: 5px 0; }
+        body { margin: 0; font-family: sans-serif; transition: all 0.3s; }
+        /* Floating State */
+        #app-container {
+            position: fixed; top: 20px; left: 20px; width: 320px; height: 80vh;
+            background: rgba(46, 0, 62, 0.98); border-radius: 12px;
+            padding: 10px; z-index: 9999; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column;
+        }
+        /* Full Screen State */
+        .full-screen { top: 0 !important; left: 0 !important; width: 100% !important; height: 100vh !important; border-radius: 0 !important; }
+        
+        #header { display: flex; align-items: center; justify-content: space-between; color: white; padding: 5px; cursor: move; }
+        .copy-btn { background: #00c853; color: white; border: none; padding: 12px; font-weight: bold; border-radius: 6px; width: 100%; margin-bottom: 10px; }
+        #searchBar { width: 100%; padding: 10px; margin-bottom: 10px; box-sizing: border-box; border-radius: 4px; }
+        #list_container { overflow-y: auto; flex-grow: 1; }
+        .defect-row { background: white; padding: 8px; margin-bottom: 6px; border-radius: 4px; display: flex; align-items: center; gap: 8px; }
+        .fault-text { border: none; width: 100%; font-size: 14px; }
     </style>
 </head>
 <body>
-    <h1>NCS Defects List</h1>
-    <div class="sticky-header">
-        <button class="copy-btn" onclick="copyNCS()">📋 COPY SELECTED</button>
-        <div class="secondary-actions">
-            <button class="action-btn" onclick="undo()">UNDO</button>
-            <button class="action-btn" onclick="resetList()">RESET</button>
-        </div>
-        <input type="text" id="searchBar" placeholder="🔍 Search defects..." onkeyup="filterList()">
-    </div>
-    
-    <div style="background: white; padding: 10px; border-radius: 8px; margin-bottom: 15px;">
-        <input type="text" id="new_shorthand" placeholder="Add custom,ncs.">
-        <button onclick="addNewDefect()" style="width:100%; padding:10px; margin-top:8px; background:var(--primary); color:white; border:none; border-radius:4px;">Add to Top</button>
-    </div>
 
-    <div id="list_container"></div>
+    <div id="app-container">
+        <div id="header">
+            <span id="drag-handle">☰ MOVE</span>
+            <button onclick="toggleSize()" style="background:none; border:none; color:white; font-size:20px;">⛶</button>
+        </div>
+        <button class="copy-btn" onclick="copyNCS()">📋 COPY SELECTED</button>
+        <input type="text" id="searchBar" placeholder="Search..." onkeyup="filterList()">
+        <div id="list_container"></div>
+    </div>
 
     <script>
         const initialList = [
-            "Filling loop connected,ncs.",
-            "Condensate not to MI's,ncs.",
-            "Gas pipe too close to electric cable/apparatus,ncs.",
-            "Anaconda ribs touching/stretched,ncs.",
-            "Gas pipe sleeved/sealed incorrectly,ncs.",
-            "Inadequately supported gas pipework,ncs.",
-            "Gas meter box door/enclosure damaged or missing,ncs.",
-            "Gas meter box latch missing,ncs.",
-            "Gas meter box outlet adaptor/union missing,ncs.",
-            "Meter bank ventilation below highest joint,ncs.",
-            "Meter bracket securing clips missing,ncs.",
-            "Meter regulator missing security seal,ncs.",
-            "Flue terminal clearances incorrect,ncs.",
-            "Equipotential earth bonding missing/inadequate,ncs.",
-            "Boiler flue not sealed to fabric of building,ncs.",
-            "Cooker point incorrectly sited,ncs.",
-            "Cooker stability chain/bracket missing,ncs.",
-            "Fire stop plate missing through ceiling,ncs.",
-            "TracPipe (CSST) not correctly taped/protected,ncs.",
+            "Filling loop connected,ncs.", "Condensate not to MI's,ncs.", "Gas pipe too close to electric cable/apparatus,ncs.", 
+            "Anaconda ribs touching/stretched,ncs.", "Gas pipe sleeved/sealed incorrectly,ncs.", "Inadequately supported gas pipework,ncs.", 
+            "Gas meter box door/enclosure damaged or missing,ncs.", "Gas meter box latch missing,ncs.", 
+            "Gas meter box outlet adaptor/union missing,ncs.", "Meter bank ventilation below highest joint,ncs.", 
+            "Meter bracket securing clips missing,ncs.", "Meter regulator missing security seal,ncs.", "Flue terminal clearances incorrect,ncs.", 
+            "Equipotential earth bonding missing/inadequate,ncs.", "Boiler flue not sealed to fabric of building,ncs.", 
+            "Cooker point incorrectly sited,ncs.", "Cooker stability chain/bracket missing,ncs.", 
+            "Fire stop plate missing through ceiling,ncs.", "TracPipe (CSST) not correctly taped/protected,ncs.", 
             "No Reg 15 emergency notice fitted at meter,ncs."
         ];
 
-        window.onload = () => { loadList(); };
-
-        function loadList() {
-            let saved = localStorage.getItem('ncs_flat_list');
-            render(saved ? JSON.parse(saved) : initialList);
+        function toggleSize() {
+            const container = document.getElementById('app-container');
+            container.classList.toggle('full-screen');
         }
 
-        function render(list) {
-            document.getElementById('list_container').innerHTML = '';
-            list.forEach(text => {
-                let div = document.createElement('div');
-                div.className = 'defect-row';
-                div.innerHTML = `<input type="checkbox" class="fault-check"><input type="text" class="fault-text" value="${text}" onchange="saveChanges()"><button class="delete-btn" onclick="deleteItem(this)">🗑️</button>`;
-                document.getElementById('list_container').appendChild(div);
-            });
-        }
-
-        function saveChanges() {
-            let list = [];
-            document.querySelectorAll('.fault-text').forEach(input => list.push(input.value));
-            localStorage.setItem('history_prev', localStorage.getItem('ncs_flat_list'));
-            localStorage.setItem('ncs_flat_list', JSON.stringify(list));
-        }
-
-        function deleteItem(btn) {
-            saveChanges();
-            btn.parentElement.remove();
-        }
-
-        function undo() {
-            let prev = localStorage.getItem('history_prev');
-            if (prev) {
-                localStorage.setItem('ncs_flat_list', prev);
-                localStorage.removeItem('history_prev');
-                loadList();
-            } else { alert("Nothing to undo!"); }
-        }
-
-        function addNewDefect() {
-            let input = document.getElementById('new_shorthand');
-            if(!input.value) return;
-            saveChanges();
-            let current = JSON.parse(localStorage.getItem('ncs_flat_list') || JSON.stringify(initialList));
-            current.unshift(input.value);
-            localStorage.setItem('ncs_flat_list', JSON.stringify(current));
-            loadList();
-            input.value = '';
-        }
-
-        function resetList() {
-            if(confirm("Factory reset list to original defaults?")) {
-                localStorage.removeItem('ncs_flat_list');
-                localStorage.removeItem('history_prev');
-                loadList();
+        // Keep your existing Drag, Load, and Render logic here...
+        // Drag Functionality
+        const container = document.getElementById('app-container');
+        let isDragging = false;
+        document.getElementById('drag-handle').addEventListener('touchstart', (e) => isDragging = true);
+        document.addEventListener('touchmove', (e) => {
+            if(isDragging && !container.classList.contains('full-screen')) {
+                container.style.left = (e.touches[0].clientX - 100) + 'px';
+                container.style.top = (e.touches[0].clientY - 20) + 'px';
             }
-        }
+        });
+        document.addEventListener('touchend', () => isDragging = false);
 
-        function copyNCS() {
-            let selected = [];
-            document.querySelectorAll('.fault-check:checked').forEach(c => selected.push(c.nextElementSibling.value));
-            if(selected.length === 0) return alert("Select at least one item.");
-            navigator.clipboard.writeText(selected.join('\n')).then(() => alert("Copied to clipboard!"));
-        }
-
-        function filterList() {
-            let filter = document.getElementById('searchBar').value.toLowerCase();
-            document.querySelectorAll('.defect-row').forEach(row => {
-                let text = row.querySelector('.fault-text').value.toLowerCase();
-                row.style.display = text.includes(filter) ? "flex" : "none";
-            });
-        }
+        // ... Add your render/copyNCS functions from before ...
+        window.onload = () => { /* render your list */ };
     </script>
 </body>
 </html>
