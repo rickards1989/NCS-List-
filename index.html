@@ -18,9 +18,7 @@
 </head>
 <body>
     <h1>NCS Defects List</h1>
-    <div class="sticky-header">
-        <button class="copy-btn" onclick="copyNCS()">📋 COPY SELECTED</button>
-    </div>
+    <div class="sticky-header"><button class="copy-btn" onclick="copyNCS()">📋 COPY SELECTED</button></div>
     
     <div class="category-block">
         <h3>🔧 Add Custom NCS</h3>
@@ -36,6 +34,29 @@
             <div class="defect-row"><input type="checkbox" class="fault-check"><input type="text" class="fault-text" value="Gas pipe sleeved/sealed incorrectly through wall,ncs."></div>
             <div class="defect-row"><input type="checkbox" class="fault-check"><input type="text" class="fault-text" value="Gas pipe too close to electrics,ncs."></div>
             <div class="defect-row"><input type="checkbox" class="fault-check"><input type="text" class="fault-text" value="Cooker point incorrectly sited,ncs."></div>
+            <div class="defect-row"><input type="checkbox" class="fault-check"><input type="text" class="fault-text" value="Anaconda ribs touching/stretched,ncs."></div>
+            <div class="defect-row"><input type="checkbox" class="fault-check"><input type="text" class="fault-text" value="Exposed stainless steel pipe incorrectly taped,ncs."></div>
+            <div class="defect-row"><input type="checkbox" class="fault-check"><input type="text" class="fault-text" value="Inadequately supported gas pipework,ncs."></div>
+        </div>
+        <div class="category-block">
+            <h3>Gas Meter Setup</h3>
+            <div class="defect-row"><input type="checkbox" class="fault-check"><input type="text" class="fault-text" value="Meter enclosure door damaged/missing,ncs."></div>
+            <div class="defect-row"><input type="checkbox" class="fault-check"><input type="text" class="fault-text" value="Gas meter box latch missing,ncs."></div>
+            <div class="defect-row"><input type="checkbox" class="fault-check"><input type="text" class="fault-text" value="Gas meter box outlet adaptor/union missing,ncs."></div>
+            <div class="defect-row"><input type="checkbox" class="fault-check"><input type="text" class="fault-text" value="Meter bank ventilation below highest joint,ncs."></div>
+            <div class="defect-row"><input type="checkbox" class="fault-check"><input type="text" class="fault-text" value="Meter bracket securing clips missing,ncs."></div>
+            <div class="defect-row"><input type="checkbox" class="fault-check"><input type="text" class="fault-text" value="Meter regulator missing security seal,ncs."></div>
+        </div>
+        <div class="category-block">
+            <h3>Valves & Appliances</h3>
+            <div class="defect-row"><input type="checkbox" class="fault-check"><input type="text" class="fault-text" value="Equipotential earth bonding missing/inadequate,ncs."></div>
+            <div class="defect-row"><input type="checkbox" class="fault-check"><input type="text" class="fault-text" value="Filling link left connected contrary to water regulations,ncs."></div>
+            <div class="defect-row"><input type="checkbox" class="fault-check"><input type="text" class="fault-text" value="Cooker stability chain/bracket missing,ncs."></div>
+            <div class="defect-row"><input type="checkbox" class="fault-check"><input type="text" class="fault-text" value="Condensate not to MI's,ncs."></div>
+            <div class="defect-row"><input type="checkbox" class="fault-check"><input type="text" class="fault-text" value="Fire stop plate missing through ceiling,ncs."></div>
+            <div class="defect-row"><input type="checkbox" class="fault-check"><input type="text" class="fault-text" value="Boiler flue not sealed to fabric of building,ncs."></div>
+            <div class="defect-row"><input type="checkbox" class="fault-check"><input type="text" class="fault-text" value="Flue terminal within min distance to opening,ncs."></div>
+            <div class="defect-row"><input type="checkbox" class="fault-check"><input type="text" class="fault-text" value="No Reg 15 emergency notice fitted at meter,ncs."></div>
         </div>
     </div>
 
@@ -44,7 +65,6 @@
             let saved = JSON.parse(localStorage.getItem('ncs_custom') || '[]');
             saved.forEach(text => renderItem(text, false));
         };
-
         function addNewDefect() {
             let input = document.getElementById('new_shorthand');
             if(!input.value) return;
@@ -54,7 +74,6 @@
             renderItem(input.value, true);
             input.value = '';
         }
-
         function renderItem(text, isNew) {
             let div = document.createElement('div');
             div.className = 'defect-row';
@@ -62,20 +81,14 @@
             let container = document.getElementById('custom_list');
             if(isNew) container.prepend(div); else container.appendChild(div);
         }
-
         function copyNCS() {
             let selected = [];
             document.querySelectorAll('.fault-check').forEach(check => { 
                 if(check.checked) selected.push(check.nextElementSibling.value);
             });
             if(selected.length === 0) return alert("Select at least one item.");
-            
-            // Forced Clipboard Method
             let output = selected.join('\n');
-            navigator.clipboard.writeText(output).then(() => {
-                alert("Copied to clipboard!");
-            }).catch(() => {
-                // Fallback for strict browsers
+            navigator.clipboard.writeText(output).then(() => alert("Copied to clipboard!")).catch(() => {
                 let textArea = document.createElement("textarea");
                 textArea.value = output;
                 document.body.appendChild(textArea);
