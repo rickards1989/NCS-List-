@@ -7,15 +7,21 @@
     <style>
         body { margin: 0; font-family: sans-serif; background: #2e003e; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         #header { padding: 10px; background: #1a0022; color: white; display: flex; justify-content: space-between; align-items: center; }
-        .copy-btn { background: #00c853; color: white; border: none; padding: 16px; font-weight: bold; font-size: 18px; border-radius: 6px; width: 100%; margin-bottom: 10px; }
+        .copy-btn { background: #00c853; color: white; border: none; padding: 16px; font-weight: bold; font-size: 18px; border-radius: 6px; width: 100%; margin-bottom: 10px; cursor: pointer; }
         .action-bar { display: flex; gap: 5px; margin-bottom: 10px; padding: 0 10px; }
         .action-btn { flex: 1; padding: 12px; background: #444; color: white; border: none; border-radius: 4px; font-size: 14px; cursor: pointer; }
         #searchBar { width: calc(100% - 20px); margin: 0 10px 10px 10px; padding: 12px; border-radius: 4px; border: 1px solid #ccc; font-size: 16px; }
         #list_container { flex-grow: 1; overflow-y: auto; padding: 0 10px 20px 10px; }
-        .defect-row { background: white; padding: 10px; margin-bottom: 8px; border-radius: 6px; display: flex; align-items: center; gap: 10px; }
-        .fault-check { width: 30px; height: 30px; cursor: pointer; }
-        .fault-text { border: none; width: 100%; font-size: 16px; padding: 5px; }
-        .delete-btn { background: #ff5252; color: white; border: none; border-radius: 4px; padding: 10px; cursor: pointer; font-size: 16px; }
+        
+        /* Highlighted row style */
+        .defect-row { background: white; padding: 8px; margin-bottom: 8px; border-radius: 6px; display: flex; align-items: center; gap: 8px; border: 2px solid transparent; }
+        .defect-row.selected { background: #e8f5e9; border: 2px solid #00c853; }
+        
+        .drag-handle { cursor: grab; font-size: 20px; color: #aaa; padding: 5px; }
+        .row-main { flex-grow: 1; display: flex; align-items: center; gap: 8px; cursor: pointer; }
+        .fault-check { width: 25px; height: 25px; cursor: pointer; }
+        .fault-text { border: none; width: 100%; font-size: 16px; padding: 5px; pointer-events: none; background: transparent; }
+        .delete-btn { background: #ff5252; color: white; border: none; border-radius: 4px; padding: 5px 8px; cursor: pointer; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -28,8 +34,8 @@
     <button class="copy-btn" onclick="copyNCS()">📋 COPY SELECTED</button>
 
     <div class="action-bar">
-        <button class="action-btn" onclick="undo()">UNDO</button>
         <button class="action-btn" onclick="addNewDefect()">+ ADD CUSTOM</button>
+        <button class="action-btn" id="undoBtn" onclick="undoDelete()" style="background:#00bcd4; display:none;">↩️ UNDO</button>
     </div>
 
     <input type="text" id="searchBar" placeholder="🔍 Search..." onkeyup="filterList()">
@@ -37,21 +43,15 @@
     <div id="list_container"></div>
 
     <script>
-        const initialList = ["Filling loop connected,ncs.", "Condensate not to MI's,ncs.", "Gas pipe too close to electric cable/apparatus,ncs.", "Anaconda ribs touching/stretched,ncs.", "Gas pipe sleeved/sealed incorrectly,ncs.", "Inadequately supported gas pipework,ncs.", "Gas meter box door/enclosure damaged or missing,ncs.", "Gas meter box latch missing,ncs.", "Gas meter box outlet adaptor/union missing,ncs.", "Meter bank ventilation below highest joint,ncs.", "Meter bracket securing clips missing,ncs.", "Meter regulator missing security seal,ncs.", "Flue terminal clearances incorrect,ncs.", "Equipotential earth bonding missing/inadequate,ncs.", "Boiler flue not sealed to fabric of building,ncs.", "Cooker point incorrectly sited,ncs.", "Cooker stability chain/bracket missing,ncs.", "Fire stop plate missing through ceiling,ncs.", "TracPipe (CSST) not correctly taped/protected,ncs.", "No Reg 15 emergency notice fitted at meter,ncs."];
+        const defaultList = ["Filling loop connected,ncs.", "Condensate not to MI's,ncs.", "Gas pipe too close to electric cable/apparatus,ncs.", "Anaconda ribs touching/stretched,ncs.", "Gas pipe sleeved/sealed incorrectly,ncs.", "Inadequately supported gas pipework,ncs.", "Gas meter box door/enclosure damaged or missing,ncs.", "Gas meter box latch missing,ncs.", "Gas meter box outlet adaptor/union missing,ncs.", "Meter bank ventilation below highest joint,ncs.", "Meter bracket securing clips missing,ncs.", "Meter regulator missing security seal,ncs.", "Flue terminal clearances incorrect,ncs.", "Equipotential earth bonding missing/inadequate,ncs.", "Boiler flue not sealed to fabric of building,ncs.", "Cooker point incorrectly sited,ncs.", "Cooker stability chain/bracket missing,ncs.", "Fire stop plate missing through ceiling,ncs.", "TracPipe (CSST) not correctly taped/protected,ncs.", "No Reg 15 emergency notice fitted at meter,ncs."];
+
+        let deletedItem = null, deletedIndex = null;
 
         window.onload = loadList;
 
         function loadList() {
-            try {
-                let saved = localStorage.getItem('ncs_flat_list');
-                // If saved data is broken, force reset to defaults
-                let list = saved ? JSON.parse(saved) : initialList;
-                if (!Array.isArray(list)) throw new Error("Data corrupted");
-                render(list);
-            } catch (e) {
-                console.error("Loading failed, resetting list", e);
-                render(initialList);
-            }
+            let saved = localStorage.getItem('ncs_flat_list');
+            render(saved ? JSON.parse(saved) : defaultList);
         }
 
         function render(list) {
@@ -61,35 +61,53 @@
                 let div = document.createElement('div');
                 div.className = 'defect-row';
                 div.innerHTML = `
-                    <input type="checkbox" class="fault-check" onchange="toggleSelect(this)">
-                    <input type="text" class="fault-text" value="${text}" onchange="saveChanges()">
+                    <div class="drag-handle">☰</div>
+                    <div class="row-main" onclick="toggleRow(this)">
+                        <input type="checkbox" class="fault-check">
+                        <input type="text" class="fault-text" value="${text}" onchange="saveChanges()">
+                    </div>
                     <button class="delete-btn" onclick="deleteItem(${index})">🗑</button>
                 `;
                 container.appendChild(div);
             });
         }
 
-        function toggleSelect(checkbox) {
+        function toggleRow(el) {
+            let checkbox = el.querySelector('.fault-check');
+            let row = el.parentElement;
+            checkbox.checked = !checkbox.checked;
+            
             if (checkbox.checked) {
-                document.getElementById('list_container').prepend(checkbox.parentElement);
-                saveChanges();
+                row.classList.add('selected');
+                document.getElementById('list_container').prepend(row);
+            } else {
+                row.classList.remove('selected');
             }
+            saveChanges();
+        }
+
+        function deleteItem(index) {
+            let list = JSON.parse(localStorage.getItem('ncs_flat_list') || JSON.stringify(defaultList));
+            deletedItem = list[index]; deletedIndex = index;
+            list.splice(index, 1);
+            localStorage.setItem('ncs_flat_list', JSON.stringify(list));
+            document.getElementById('undoBtn').style.display = 'block';
+            loadList();
+        }
+
+        function undoDelete() {
+            let list = JSON.parse(localStorage.getItem('ncs_flat_list') || JSON.stringify(defaultList));
+            list.splice(deletedIndex, 0, deletedItem);
+            localStorage.setItem('ncs_flat_list', JSON.stringify(list));
+            document.getElementById('undoBtn').style.display = 'none';
+            loadList();
         }
 
         function addNewDefect() {
             let text = prompt("Enter note:");
             if(!text) return;
-            if(confirm("Add ',ncs.' to the end?")) text += ",ncs.";
-            
-            let list = JSON.parse(localStorage.getItem('ncs_flat_list') || JSON.stringify(initialList));
+            let list = JSON.parse(localStorage.getItem('ncs_flat_list') || JSON.stringify(defaultList));
             list.unshift(text);
-            localStorage.setItem('ncs_flat_list', JSON.stringify(list));
-            loadList();
-        }
-
-        function deleteItem(index) {
-            let list = JSON.parse(localStorage.getItem('ncs_flat_list') || JSON.stringify(initialList));
-            list.splice(index, 1);
             localStorage.setItem('ncs_flat_list', JSON.stringify(list));
             loadList();
         }
@@ -97,25 +115,11 @@
         function saveChanges() {
             let list = [];
             document.querySelectorAll('.fault-text').forEach(input => list.push(input.value));
-            localStorage.setItem('history_prev', localStorage.getItem('ncs_flat_list'));
             localStorage.setItem('ncs_flat_list', JSON.stringify(list));
         }
 
-        function undo() {
-            let prev = localStorage.getItem('history_prev');
-            if (prev) {
-                localStorage.setItem('ncs_flat_list', prev);
-                localStorage.removeItem('history_prev');
-                loadList();
-            }
-        }
-
         function resetList() {
-            if(confirm("Factory reset list to original?")) {
-                localStorage.removeItem('ncs_flat_list');
-                localStorage.removeItem('history_prev');
-                loadList();
-            }
+            if(confirm("Factory reset?")) { localStorage.removeItem('ncs_flat_list'); location.reload(); }
         }
 
         function copyNCS() {
@@ -123,7 +127,7 @@
             document.querySelectorAll('.defect-row').forEach(row => {
                 if (row.querySelector('.fault-check').checked) selected.push(row.querySelector('.fault-text').value);
             });
-            if(selected.length === 0) return alert("Select at least one item.");
+            if(selected.length === 0) return alert("Select at least one.");
             navigator.clipboard.writeText(selected.join('\n')).then(() => alert("Copied!"));
         }
 
