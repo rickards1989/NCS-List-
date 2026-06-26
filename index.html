@@ -19,6 +19,10 @@
         .defect-row.selected { background: #b9f6ca; border-color: #00c853; }
         .delete-mode-active { border-color: #d32f2f !important; background: #ffccbc !important; }
         
+        /* The Wobble/Lift effect */
+        .sortable-ghost { opacity: 0.4; background: #f0f0f0; }
+        .sortable-chosen { transform: rotate(2deg) scale(1.02); box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 100; }
+        
         .drag-handle { cursor: grab; font-size: 22px; color: #aaa; padding-right: 5px; }
         .row-text { flex-grow: 1; padding: 5px; cursor: pointer; font-size: 16px; font-weight: 500; }
     </style>
@@ -50,7 +54,17 @@
         let isDeleteMode = false;
         let selectedItems = new Set(); 
 
-        window.onload = () => { loadList(); new Sortable(document.getElementById('list_container'), { handle: '.drag-handle', animation: 150, onEnd: saveOrder }); };
+        window.onload = () => { 
+            loadList(); 
+            // Added class names for the wobble/lift effect
+            new Sortable(document.getElementById('list_container'), { 
+                handle: '.drag-handle', 
+                animation: 200, 
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                onEnd: saveOrder 
+            }); 
+        };
 
         function loadList() {
             let saved = JSON.parse(localStorage.getItem('ncs_list') || JSON.stringify(defaultList));
