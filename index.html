@@ -17,8 +17,6 @@
         
         .defect-row { background: white; padding: 12px; margin-bottom: 8px; border-radius: 8px; display: flex; align-items: center; gap: 12px; border: 3px solid transparent; transition: 0.2s; }
         .defect-row.selected { background: #b9f6ca; border-color: #00c853; }
-        
-        /* Persistent Delete Mode Styles */
         .delete-mode-active { border-color: #d32f2f !important; background: #ffccbc !important; }
         
         .drag-handle { cursor: grab; font-size: 22px; color: #aaa; padding-right: 5px; }
@@ -59,7 +57,6 @@
         function render(list) {
             let container = document.getElementById('list_container');
             container.innerHTML = '';
-            
             let sorted = [...list].sort((a, b) => selectedItems.has(b) - selectedItems.has(a));
             
             sorted.forEach((text) => {
@@ -77,11 +74,16 @@
                 list = list.filter(item => item !== text);
                 selectedItems.delete(text);
                 localStorage.setItem('ncs_list', JSON.stringify(list));
-                loadList(); // Re-render stays in Delete Mode
+                loadList();
             } else {
+                // Toggle selection
                 if (selectedItems.has(text)) selectedItems.delete(text);
                 else selectedItems.add(text);
-                loadList();
+                
+                // Clear search bar and reset view
+                document.getElementById('searchBar').value = '';
+                filterList(); 
+                loadList(); 
             }
         }
 
@@ -89,6 +91,13 @@
             isDeleteMode = !isDeleteMode;
             document.getElementById('delBtn').innerText = isDeleteMode ? "🗑 DELETE MODE: ON" : "🗑 DELETE MODE: OFF";
             render(JSON.parse(localStorage.getItem('ncs_list') || JSON.stringify(defaultList)));
+        }
+
+        function filterList() {
+            let query = document.getElementById('searchBar').value.toLowerCase();
+            document.querySelectorAll('.defect-row').forEach(row => {
+                row.style.display = row.innerText.toLowerCase().includes(query) ? 'flex' : 'none';
+            });
         }
 
         function copyNCS() {
@@ -108,13 +117,6 @@
         function saveOrder() {
             let list = Array.from(document.querySelectorAll('.row-text')).map(el => el.innerText);
             localStorage.setItem('ncs_list', JSON.stringify(list));
-        }
-
-        function filterList() {
-            let query = document.getElementById('searchBar').value.toLowerCase();
-            document.querySelectorAll('.defect-row').forEach(row => {
-                row.style.display = row.innerText.toLowerCase().includes(query) ? 'flex' : 'none';
-            });
         }
 
         function resetList() { if(confirm("Factory reset?")) { localStorage.removeItem('ncs_list'); location.reload(); } }
