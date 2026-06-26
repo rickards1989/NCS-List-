@@ -8,22 +8,17 @@
     <style>
         body { margin: 0; font-family: sans-serif; background: #2e003e; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         #header { padding: 12px; background: #1a0022; color: white; display: flex; justify-content: space-between; align-items: center; }
-        
-        /* Pinned Controls */
         .controls { padding: 10px; background: #2e003e; flex-shrink: 0; }
         .action-bar { display: flex; gap: 8px; margin-bottom: 10px; }
         .action-btn { flex: 1; padding: 12px; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; color: white; font-weight: bold; }
         #searchBar { width: 100%; padding: 12px; border: none; border-radius: 6px; box-sizing: border-box; font-size: 16px; margin-bottom: 5px; }
         
-        /* Scrollable List Container */
-        #list_container { flex-grow: 1; overflow-y: auto; padding: 10px; }
+        #list_container { flex-grow: 1; overflow-y: auto; padding: 10px 10px 40px 10px; }
         
         .defect-row { background: white; padding: 12px; margin-bottom: 8px; border-radius: 8px; display: flex; align-items: center; gap: 12px; border: 3px solid transparent; transition: 0.2s; }
-        
-        /* Selected items move to top */
-        .defect-row.selected { background: #b9f6ca; border-color: #00c853; order: -1; }
-        
+        .defect-row.selected { background: #b9f6ca; border-color: #00c853; }
         .delete-mode { border-color: #d32f2f !important; background: #ffccbc !important; }
+        
         .drag-handle { cursor: grab; font-size: 22px; color: #aaa; padding-right: 5px; }
         .row-text { flex-grow: 1; padding: 5px; cursor: pointer; font-size: 16px; font-weight: 500; }
     </style>
@@ -48,43 +43,45 @@
 
     <script>
         const defaultList = ["Filling loop connected,ncs.", "Condensate not to MI's,ncs.", "Gas pipe too close to electric cable/apparatus,ncs.", "Anaconda ribs touching/stretched,ncs.", "Gas pipe sleeved/sealed incorrectly,ncs.", "Inadequately supported gas pipework,ncs.", "Gas meter box door/enclosure damaged or missing,ncs.", "Gas meter box latch missing,ncs.", "Gas meter box outlet adaptor/union missing,ncs.", "Meter bank ventilation below highest joint,ncs.", "Meter bracket securing clips missing,ncs.", "Meter regulator missing security seal,ncs.", "Flue terminal clearances incorrect,ncs.", "Equipotential earth bonding missing/inadequate,ncs.", "Boiler flue not sealed to fabric of building,ncs.", "Cooker point incorrectly sited,ncs.", "Cooker stability chain/bracket missing,ncs.", "Fire stop plate missing through ceiling,ncs.", "TracPipe (CSST) not correctly taped/protected,ncs.", "No Reg 15 emergency notice fitted at meter,ncs."];
+        
         let isDeleteMode = false;
+        let selectedItems = new Set(); // Stores text of selected items
 
         window.onload = () => { loadList(); new Sortable(document.getElementById('list_container'), { handle: '.drag-handle', animation: 150, onEnd: saveOrder }); };
 
         function loadList() {
-            let saved = localStorage.getItem('ncs_list');
-            render(saved ? JSON.parse(saved) : defaultList);
+            let saved = JSON.parse(localStorage.getItem('ncs_list') || JSON.stringify(defaultList));
+            render(saved);
         }
 
         function render(list) {
             let container = document.getElementById('list_container');
             container.innerHTML = '';
-            list.forEach((text, index) => {
+            
+            // Sort: Selected items first, then original order
+            let sorted = [...list].sort((a, b) => selectedItems.has(b) - selectedItems.has(a));
+            
+            sorted.forEach((text, index) => {
                 let div = document.createElement('div');
-                div.className = 'defect-row';
-                div.innerHTML = `<div class="drag-handle">☰</div><div class="row-text" onclick="handleRowClick(this.parentElement, ${index})">${text}</div>`;
+                div.className = 'defect-row' + (selectedItems.has(text) ? ' selected' : '');
+                div.innerHTML = `<div class="drag-handle">☰</div><div class="row-text" onclick="handleRowClick(this.parentElement, '${text.replace(/'/g, "\\'")}')">${text}</div>`;
                 container.appendChild(div);
             });
         }
 
-        function handleRowClick(row, index) {
+        function handleRowClick(row, text) {
             if (isDeleteMode) {
                 if(!confirm("Delete this defect?")) return;
                 let list = JSON.parse(localStorage.getItem('ncs_list') || JSON.stringify(defaultList));
-                list.splice(index, 1);
+                list = list.filter(item => item !== text);
+                selectedItems.delete(text);
                 localStorage.setItem('ncs_list', JSON.stringify(list));
                 loadList();
             } else {
-                row.classList.toggle('selected');
+                if (selectedItems.has(text)) selectedItems.delete(text);
+                else selectedItems.add(text);
+                loadList(); // Re-renders to move to top
             }
-        }
-
-        function filterList() {
-            let query = document.getElementById('searchBar').value.toLowerCase();
-            document.querySelectorAll('.defect-row').forEach(row => {
-                row.style.display = row.innerText.toLowerCase().includes(query) ? 'flex' : 'none';
-            });
         }
 
         function toggleDeleteMode() {
@@ -94,9 +91,8 @@
         }
 
         function copyNCS() {
-            let selected = Array.from(document.querySelectorAll('.selected')).map(el => el.innerText.replace('☰', '').trim());
-            if(selected.length === 0) return alert("Select at least one.");
-            navigator.clipboard.writeText(selected.join('\n')).then(() => alert("Copied!"));
+            if(selectedItems.size === 0) return alert("Select at least one.");
+            navigator.clipboard.writeText(Array.from(selectedItems).join('\n')).then(() => alert("Copied!"));
         }
 
         function addNewDefect() {
@@ -109,9 +105,15 @@
         }
 
         function saveOrder() {
-            let list = [];
-            document.querySelectorAll('.row-text').forEach(el => list.push(el.innerText));
+            let list = Array.from(document.querySelectorAll('.row-text')).map(el => el.innerText);
             localStorage.setItem('ncs_list', JSON.stringify(list));
+        }
+
+        function filterList() {
+            let query = document.getElementById('searchBar').value.toLowerCase();
+            document.querySelectorAll('.defect-row').forEach(row => {
+                row.style.display = row.innerText.toLowerCase().includes(query) ? 'flex' : 'none';
+            });
         }
 
         function resetList() { if(confirm("Factory reset?")) { localStorage.removeItem('ncs_list'); location.reload(); } }
