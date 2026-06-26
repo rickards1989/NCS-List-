@@ -17,7 +17,9 @@
         
         .defect-row { background: white; padding: 12px; margin-bottom: 8px; border-radius: 8px; display: flex; align-items: center; gap: 12px; border: 3px solid transparent; transition: 0.2s; }
         .defect-row.selected { background: #b9f6ca; border-color: #00c853; }
-        .delete-mode { border-color: #d32f2f !important; background: #ffccbc !important; }
+        
+        /* Persistent Delete Mode Styles */
+        .delete-mode-active { border-color: #d32f2f !important; background: #ffccbc !important; }
         
         .drag-handle { cursor: grab; font-size: 22px; color: #aaa; padding-right: 5px; }
         .row-text { flex-grow: 1; padding: 5px; cursor: pointer; font-size: 16px; font-weight: 500; }
@@ -45,7 +47,7 @@
         const defaultList = ["Filling loop connected,ncs.", "Condensate not to MI's,ncs.", "Gas pipe too close to electric cable/apparatus,ncs.", "Anaconda ribs touching/stretched,ncs.", "Gas pipe sleeved/sealed incorrectly,ncs.", "Inadequately supported gas pipework,ncs.", "Gas meter box door/enclosure damaged or missing,ncs.", "Gas meter box latch missing,ncs.", "Gas meter box outlet adaptor/union missing,ncs.", "Meter bank ventilation below highest joint,ncs.", "Meter bracket securing clips missing,ncs.", "Meter regulator missing security seal,ncs.", "Flue terminal clearances incorrect,ncs.", "Equipotential earth bonding missing/inadequate,ncs.", "Boiler flue not sealed to fabric of building,ncs.", "Cooker point incorrectly sited,ncs.", "Cooker stability chain/bracket missing,ncs.", "Fire stop plate missing through ceiling,ncs.", "TracPipe (CSST) not correctly taped/protected,ncs.", "No Reg 15 emergency notice fitted at meter,ncs."];
         
         let isDeleteMode = false;
-        let selectedItems = new Set(); // Stores text of selected items
+        let selectedItems = new Set(); 
 
         window.onload = () => { loadList(); new Sortable(document.getElementById('list_container'), { handle: '.drag-handle', animation: 150, onEnd: saveOrder }); };
 
@@ -58,12 +60,11 @@
             let container = document.getElementById('list_container');
             container.innerHTML = '';
             
-            // Sort: Selected items first, then original order
             let sorted = [...list].sort((a, b) => selectedItems.has(b) - selectedItems.has(a));
             
-            sorted.forEach((text, index) => {
+            sorted.forEach((text) => {
                 let div = document.createElement('div');
-                div.className = 'defect-row' + (selectedItems.has(text) ? ' selected' : '');
+                div.className = 'defect-row' + (selectedItems.has(text) ? ' selected' : '') + (isDeleteMode ? ' delete-mode-active' : '');
                 div.innerHTML = `<div class="drag-handle">☰</div><div class="row-text" onclick="handleRowClick(this.parentElement, '${text.replace(/'/g, "\\'")}')">${text}</div>`;
                 container.appendChild(div);
             });
@@ -76,18 +77,18 @@
                 list = list.filter(item => item !== text);
                 selectedItems.delete(text);
                 localStorage.setItem('ncs_list', JSON.stringify(list));
-                loadList();
+                loadList(); // Re-render stays in Delete Mode
             } else {
                 if (selectedItems.has(text)) selectedItems.delete(text);
                 else selectedItems.add(text);
-                loadList(); // Re-renders to move to top
+                loadList();
             }
         }
 
         function toggleDeleteMode() {
             isDeleteMode = !isDeleteMode;
             document.getElementById('delBtn').innerText = isDeleteMode ? "🗑 DELETE MODE: ON" : "🗑 DELETE MODE: OFF";
-            document.querySelectorAll('.defect-row').forEach(row => row.classList.toggle('delete-mode', isDeleteMode));
+            render(JSON.parse(localStorage.getItem('ncs_list') || JSON.stringify(defaultList)));
         }
 
         function copyNCS() {
