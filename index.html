@@ -31,7 +31,10 @@
     </div>
 
     <div class="controls">
-        <button style="background:#00c853; color:white; border:none; width:100%; padding:16px; font-weight:bold; font-size:18px; border-radius:8px; margin-bottom: 10px;" onclick="copyNCS()">📋 COPY SELECTED</button>
+        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+            <button style="background:#00c853; color:white; border:none; flex: 2; padding:16px; font-weight:bold; font-size:16px; border-radius:8px;" onclick="copyNCS()">📋 COPY</button>
+            <button style="background:#ff9800; color:white; border:none; flex: 1; padding:16px; font-weight:bold; font-size:16px; border-radius:8px;" onclick="clearSelection()">✖ CLEAR</button>
+        </div>
         <div class="action-bar">
             <button class="action-btn" style="background:#444;" onclick="addNewDefect()">+ ADD CUSTOM</button>
             <button class="action-btn" id="delBtn" style="background:#d32f2f;" onclick="toggleDeleteMode()">🗑 DELETE MODE: OFF</button>
@@ -76,28 +79,23 @@
                 localStorage.setItem('ncs_list', JSON.stringify(list));
                 loadList();
             } else {
-                // Toggle selection
                 if (selectedItems.has(text)) selectedItems.delete(text);
                 else selectedItems.add(text);
-                
-                // Clear search bar and reset view
                 document.getElementById('searchBar').value = '';
                 filterList(); 
                 loadList(); 
             }
         }
 
+        function clearSelection() {
+            selectedItems.clear();
+            loadList();
+        }
+
         function toggleDeleteMode() {
             isDeleteMode = !isDeleteMode;
             document.getElementById('delBtn').innerText = isDeleteMode ? "🗑 DELETE MODE: ON" : "🗑 DELETE MODE: OFF";
             render(JSON.parse(localStorage.getItem('ncs_list') || JSON.stringify(defaultList)));
-        }
-
-        function filterList() {
-            let query = document.getElementById('searchBar').value.toLowerCase();
-            document.querySelectorAll('.defect-row').forEach(row => {
-                row.style.display = row.innerText.toLowerCase().includes(query) ? 'flex' : 'none';
-            });
         }
 
         function copyNCS() {
@@ -117,6 +115,13 @@
         function saveOrder() {
             let list = Array.from(document.querySelectorAll('.row-text')).map(el => el.innerText);
             localStorage.setItem('ncs_list', JSON.stringify(list));
+        }
+
+        function filterList() {
+            let query = document.getElementById('searchBar').value.toLowerCase();
+            document.querySelectorAll('.defect-row').forEach(row => {
+                row.style.display = row.innerText.toLowerCase().includes(query) ? 'flex' : 'none';
+            });
         }
 
         function resetList() { if(confirm("Factory reset?")) { localStorage.removeItem('ncs_list'); location.reload(); } }
