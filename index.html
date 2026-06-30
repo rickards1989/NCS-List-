@@ -113,8 +113,16 @@
         }
 
         function copyNCS() {
-            if(selectedItems.size === 0) return alert("Select at least one.");
-            navigator.clipboard.writeText(Array.from(selectedItems).join('\n')).then(() => alert("Copied!"));
+            if (selectedItems.size === 0) return alert("Select at least one.");
+            
+            // Grabs only the text from rows that are currently highlighted green (.selected)
+            // It naturally reads top-to-bottom on the screen.
+            let selectedNodes = document.querySelectorAll('.defect-row.selected .row-text');
+            
+            // Extracts the text and joins them with a comma and a space
+            let textToCopy = Array.from(selectedNodes).map(el => el.innerText).join(', ');
+            
+            navigator.clipboard.writeText(textToCopy).then(() => alert("Copied!"));
         }
 
         function addNewDefect() {
